@@ -33,7 +33,8 @@ fun lex(castMap: Maybe<CastMap>) = fun(lexerTable: LexerTable) = { src: Source -
 	var lineN = 0
 	var columnN = 0
 	val fileName = src.fileName
-	fun loop(view: StringView) = buildSequence {
+	/// workaround for KT-23531
+	fun loop(view: StringView): Sequence<Either<String, Token>> = buildSequence {
 		if (view.offset >= n) return@buildSequence
 		val match = lexerFactorMatch(view)
 		lexerTable
