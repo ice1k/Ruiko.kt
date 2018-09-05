@@ -27,7 +27,7 @@ typealias CastMap = MutableMap<String, String>
 data class Lexer(val name: String, val factor: LexerFactor)
 data class Source(val fileName: String, val text: String)
 
-fun lex(castMap: Maybe<CastMap>) = fun(lexerTable: LexerTable) = fun(src: Source) {
+fun lex(castMap: Maybe<CastMap>) = fun(lexerTable: LexerTable) = { src: Source ->
 	val view = StringView(src.text, 0)
 	val n = src.text.length
 	var lineN = 0

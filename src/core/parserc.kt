@@ -3,7 +3,7 @@ package org.ice1000.ruiko.core
 import org.ice1000.ruiko.haskell.Maybe
 import org.ice1000.ruiko.lexer.Lexer
 
-typealias Rewriter<T> = (State<T>) -> (Ast<T>) -> Ast<T>
+typealias RewriteFunc<T> = (State<T>) -> (Ast<T>) -> Ast<T>
 
 data class LiteralRule(
 		val test: (Token) -> Boolean,
@@ -21,7 +21,7 @@ data class State<T>(
 
 sealed class Parser<out T>
 data class Predicate<T>(val f: (State<T>) -> Boolean) : Parser<T>()
-data class Rewrite<T>(val p: Parser<T>, val r: Rewriter<T>) : Parser<T>()
+data class Rewrite<T>(val p: Parser<T>, val r: RewriteFunc<T>) : Parser<T>()
 data class Literal(val lit: LiteralRule) : Parser<Nothing>()
 object Anything : Parser<Nothing>()
 data class Lens<T>(val f: (T) -> (Ast<T>) -> T, val p: Parser<T>) : Parser<T>()
@@ -31,3 +31,7 @@ data class Or<T>(val list: List<Parser<T>>) : Parser<T>()
 // TODO ask red red wat is dis UwU
 data class Repeat<T>(val a: Int, val b: Int, val p: Parser<T>) : Parser<T>()
 data class Except<T>(val p: Parser<T>) : Parser<T>()
+
+fun <T> `!`(p: Parser<T>) = Except(p)
+infix fun <T> Parser<T>.`=|`(p: RewriteFunc<T>) = Rewrite(this, p)
+infix fun <T> Parser<T>.`%`(f: (T) -> (Ast<T>) -> T) = Lens(f, this)

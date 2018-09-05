@@ -13,12 +13,12 @@ sealed class Either<out T, out U> {
 	fun asLeftOrNull() = (this as? Left)?.obj
 	fun asRightOrNull() = (this as? Right)?.obj
 	fun swap() = either(::Right, ::Left)
-	inline fun <R> mapLeft(f: (T) -> R) = when (this) {
+	inline infix fun <R> mapLeft(f: (T) -> R) = when (this) {
 		is Left -> Left(f(obj))
 		is Right -> Right(obj)
 	}
 
-	inline fun <R> mapRight(f: (U) -> R) = when (this) {
+	inline infix fun <R> mapRight(f: (U) -> R) = when (this) {
 		is Left -> Left(obj)
 		is Right -> Right(f(obj))
 	}
@@ -29,18 +29,18 @@ sealed class Either<out T, out U> {
 	}
 }
 
-inline fun <T, U, R> Either<T, U>.flatMapLeft(f: (T) -> Either<R, U>) = when (this) {
+inline infix fun <T, U, R> Either<T, U>.flatMapLeft(f: (T) -> Either<R, U>) = when (this) {
 	is Left -> f(obj)
 	is Right -> Right(obj)
 }
 
-inline fun <T, U, R> Either<T, U>.flatMapRight(f: (U) -> Either<T, R>) = when (this) {
+inline infix fun <T, U, R> Either<T, U>.flatMapRight(f: (U) -> Either<T, R>) = when (this) {
 	is Left -> Left(obj)
 	is Right -> f(obj)
 }
 
-inline fun <T, U, R> Either<T, U>.flatMap(f: (T) -> Either<R, U>) = flatMapLeft(f)
-inline fun <T, U, R> Either<T, U>.map(f: (T) -> R) = mapLeft(f)
+inline infix fun <T, U, R> Either<T, U>.flatMap(f: (T) -> Either<R, U>) = flatMapLeft(f)
+inline infix fun <T, U, R> Either<T, U>.map(f: (T) -> R) = mapLeft(f)
 
 data class Left<T>(val obj: T) : Either<T, Void>()
 data class Right<U>(val obj: U) : Either<Void, U>()
@@ -51,8 +51,8 @@ sealed class Maybe<out T> {
 	fun asJust() = (this as Just).obj
 	fun asJustSafe() = (this as? Just)?.obj
 	fun isJust() = this is Just
-	inline fun <R> map(f: (T) -> R) = flatMap(f compose ::Just)
-	inline fun <R> flatMap(f: (T) -> Maybe<R>) = when (this) {
+	inline infix fun <R> map(f: (T) -> R) = flatMap(f `-*` ::Just)
+	inline infix fun <R> flatMap(f: (T) -> Maybe<R>) = when (this) {
 		is Just -> f(obj)
 		Nothing -> Nothing
 	}
@@ -60,8 +60,9 @@ sealed class Maybe<out T> {
 
 infix fun <T> Maybe<T>.`||`(o: Maybe<T>) = if (isJust()) this else o
 fun <T> Sequence<Maybe<T>>.firstJust() = fold(Nothing, Maybe<T>::`||`)
-inline fun <T> Maybe<T>.getOr(f: () -> T) = asJustSafe() ?: f()
-fun <T> Maybe<T>.getOr(t: T) = getOr { t }
+fun <T> Iterable<Maybe<T>>.firstJust() = fold(Nothing, Maybe<T>::`||`)
+inline infix fun <T> Maybe<T>.getOr(f: () -> T) = asJustSafe() ?: f()
+infix fun <T> Maybe<T>.getOr(t: T) = getOr { t }
 
 data class Just<T>(val obj: T) : Maybe<T>()
 object Nothing : Maybe<Void>()
