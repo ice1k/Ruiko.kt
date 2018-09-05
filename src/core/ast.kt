@@ -1,4 +1,4 @@
-package core
+package org.ice1000.ruiko.core
 
 data class Token(
 		val fileName: String,

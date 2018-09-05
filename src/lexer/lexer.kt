@@ -1,7 +1,7 @@
-package org.ice1000.ruiko
+package org.ice1000.ruiko.lexer
 
-import core.Token
-import core.cache
+import org.ice1000.ruiko.core.Token
+import org.ice1000.ruiko.core.cache
 import org.ice1000.ruiko.haskell.*
 import kotlin.coroutines.experimental.buildSequence
 
