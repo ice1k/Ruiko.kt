@@ -11,14 +11,25 @@ data class LiteralRule(
 		val lexer: Maybe<() -> Lexer>
 )
 
-class Trace<T> // TODO ask red red wat is dis UwU
 data class LRInternal(val depth: Int, val name: String)
 data class State<T>(
-		var lr: HashSet<LRInternal>,
+		var lr: MutableSet<LRInternal>,
 		var context: T,
 		val trace: Trace<Trace<String>>,
-		val lang: HashMap<String, Parser<T>>
-)
+		val lang: MutableMap<String, Parser<T>>
+) {
+	companion object Factory {
+		operator fun <T> invoke(top: T): State<T> {
+			val trace = Trace<Trace<String>>()
+			trace.append(Trace())
+			return State(hashSetOf(), top, trace, hashMapOf())
+		}
+	}
+
+	val endIndex get() = trace.endIndex
+	val maxFetched get() = trace.maxFetched
+	val current get() = trace[endIndex]
+}
 
 sealed class Parser<out T>
 data class Predicate<T>(val f: (State<T>) -> Boolean) : Parser<T>()
@@ -44,9 +55,10 @@ infix fun <T> Parser<T>.nextBy(p: Parser<T>) = when (this) {
 
 fun <T> optional(p: Parser<T>) = p.toOptional()
 fun <T> Parser<T>.toOptional() = repeat(0, 1)
-fun <T> Parser<T>.repeat(atLeast: Int) = repeat(atLeast, -1)
+infix fun <T> Parser<T>.repeat(atLeast: Int) = repeat(atLeast, -1)
 fun <T> Parser<T>.repeat(atLeast: Int, atMost: Int) = Repeat(atLeast, atMost, this)
-fun <T> Parser<T>.join(p: Parser<T>) = And(this, And(p, this).repeat(0))
+infix fun <T> Parser<T>.join(p: Parser<T>) = And(this, And(p, this).repeat(0))
+fun <T> Parser<T>.item(atLeast: Int, atMost: Int) = Repeat(atLeast, atMost, this)
 
 fun <T> `!`(p: Parser<T>) = Except(p)
 infix fun <T> Parser<T>.`=|`(p: RewriteFunc<T>) = Rewrite(this, p)
