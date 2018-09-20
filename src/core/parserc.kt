@@ -6,6 +6,8 @@ import org.ice1000.ruiko.lexer.Lexer
 
 typealias RewriteFunc<T> = (State<T>) -> (Ast<T>) -> Ast<T>
 
+data class History<T>(val base: Int, val branch: Int, val ctx: T)
+
 data class LiteralRule(
 		val test: (Token) -> Boolean,
 		val lexer: Maybe<() -> Lexer>
@@ -24,11 +26,39 @@ data class State<T>(
 			trace.append(Trace())
 			return State(hashSetOf(), top, trace, hashMapOf())
 		}
+
+		inline operator fun <reified T> invoke(): State<T> {
+			val trace = Trace<Trace<String>>()
+			trace.append(Trace())
+			return State(hashSetOf(), T::class.java.newInstance(), trace, hashMapOf())
+		}
+
+		fun <T, R> leftRecur(self: State<T>, lr: LRInternal, fn: (State<T>) -> R): R {
+			self.lr.add(lr)
+			println("start lr ${lr.name} at ${self.lr}")
+			val ret = fn(self)
+			self.lr.remove(lr)
+			println("end lr ${lr.name} at ${self.lr}")
+			return ret
+		}
 	}
 
-	val endIndex get() = trace.endIndex
-	val maxFetched get() = trace.maxFetched
-	val current get() = trace[endIndex]
+	inline val endIndex get() = trace.endIndex
+	inline val maxFetched get() = trace.maxFetched
+	inline val current get() = trace[endIndex]
+	fun reset(history: History<T>) {
+		val (base, branch, ctx) = history
+		context = ctx
+		trace.reset(base)
+		current.reset(branch)
+	}
+
+	fun append(string: String) = current.append(string)
+	fun commit() = History(trace.commit, current.commit, context)
+	operator fun contains(record: String) = record in current
+	fun newOne() {
+		if (!trace.inc { Trace() }) current.clear()
+	}
 }
 
 sealed class Parser<out T>
@@ -38,8 +68,14 @@ data class Literal(val lit: LiteralRule) : Parser<Nothing>()
 object Anything : Parser<Nothing>()
 data class Lens<T>(val f: (T) -> (Ast<T>) -> T, val p: Parser<T>) : Parser<T>()
 data class Named<T>(val name: String, val f: () -> T) : Parser<T>()
-data class And<T>(val list: List<Parser<T>>) : Parser<T>() { constructor(vararg ps: Parser<T>) : this(ps.toList()) }
-data class Or<T>(val list: List<Parser<T>>) : Parser<T>() { constructor(vararg ps: Parser<T>) : this(ps.toList()) }
+data class And<T>(val list: List<Parser<T>>) : Parser<T>() {
+	constructor(vararg ps: Parser<T>) : this(ps.toList())
+}
+
+data class Or<T>(val list: List<Parser<T>>) : Parser<T>() {
+	constructor(vararg ps: Parser<T>) : this(ps.toList())
+}
+
 data class Repeat<T>(val atLeast: Int, val atMost: Int, val p: Parser<T>) : Parser<T>()
 data class Except<T>(val p: Parser<T>) : Parser<T>()
 

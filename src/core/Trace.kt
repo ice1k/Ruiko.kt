@@ -1,7 +1,5 @@
 package org.ice1000.ruiko.core
 
-import java.util.function.Supplier
-
 /**
  * Created by redy red, don't know why
  * @param T
@@ -40,10 +38,10 @@ class Trace<T> {
 		records[sLen] = e
 	}
 
-	fun inc(supplier: Supplier<T>): Boolean {
+	fun inc(supplier: () -> T): Boolean {
 		val sLen = commit
 		if (maxFetched == sLen) {
-			records.add(supplier.get())
+			records.add(supplier())
 			commit++
 			return true
 		}
