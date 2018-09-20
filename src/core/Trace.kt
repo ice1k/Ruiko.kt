@@ -13,7 +13,7 @@ class Trace<T> {
 	var commit: Int = 0
 		private set
 
-	val endIndex get() = commit - 1
+	inline val endIndex get() = commit - 1
 	val maxFetched get() = records.size
 
 	init {

@@ -153,5 +153,15 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 	is And -> TODO()
 	is Or -> TODO()
 	is Repeat -> TODO()
-	is Except -> TODO()
+	is Except -> {
+		val history = state.commit()
+		when (parse(self.p, tokens, state, `class`)) {
+			Unmatched -> {
+				state.reset(history)
+				if (tokens.size <= state.endIndex) Unmatched
+				else Matched(Leaf(tokens[state.endIndex]))
+			}
+			else -> Unmatched.also { state.reset(history) }
+		}
+	}
 }
