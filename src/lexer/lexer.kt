@@ -20,14 +20,14 @@ fun lexerFactorMatch(stringView: StringView) = fun(factor: LexerFactor) = when (
 	is StringFactor -> factor.string.firstOrNull { stringView.startsWith(it) }
 }.toMaybe()
 
-typealias LexerMatcher = (StringView) -> Maybe<String>
+typealias LexerMatcher = (StringView) -> Option<String>
 typealias LexerTable = Sequence<Lexer>
 typealias CastMap = MutableMap<String, String>
 
 data class Lexer(val name: String, val factor: LexerFactor)
 data class Source(val fileName: String, val text: String)
 
-fun lex(castMap: Maybe<CastMap>) = fun(lexerTable: LexerTable) = { src: Source ->
+fun lex(castMap: Option<CastMap>) = fun(lexerTable: LexerTable) = { src: Source ->
 	val view = StringView(src.text, 0)
 	val n = src.text.length
 	var lineN = 0

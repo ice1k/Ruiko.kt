@@ -1,10 +1,6 @@
 /** Helper monads that makes rewriting in Haskell easier */
 package org.ice1000.ruiko.haskell
 
-import kotlin.Nothing as Void
-
-typealias Void = Void
-
 sealed class Either<out T, out U> {
 	fun asLeft() = (this as Left).obj
 	fun asRight() = (this as Right).obj
@@ -42,27 +38,27 @@ inline infix fun <T, U, R> Either<T, U>.flatMapRight(f: (U) -> Either<T, R>) = w
 inline infix fun <T, U, R> Either<T, U>.flatMap(f: (T) -> Either<R, U>) = flatMapLeft(f)
 inline infix fun <T, U, R> Either<T, U>.map(f: (T) -> R) = mapLeft(f)
 
-data class Left<T>(val obj: T) : Either<T, Void>()
-data class Right<U>(val obj: U) : Either<Void, U>()
+data class Left<T>(val obj: T) : Either<T, Nothing>()
+data class Right<U>(val obj: U) : Either<Nothing, U>()
 
-fun <T : Any> T?.toMaybe() = this?.let(::Just) ?: Nothing
+fun <T : Any> T?.toMaybe() = this?.let(::Some) ?: None
 
-sealed class Maybe<out T> {
-	fun asJust() = (this as Just).obj
-	fun asJustSafe() = (this as? Just)?.obj
-	fun isJust() = this is Just
-	inline infix fun <R> map(f: (T) -> R) = flatMap(f `-*` ::Just)
-	inline infix fun <R> flatMap(f: (T) -> Maybe<R>) = when (this) {
-		is Just -> f(obj)
-		Nothing -> Nothing
+sealed class Option<out T> {
+	fun asJust() = (this as Some).obj
+	fun asJustSafe() = (this as? Some)?.obj
+	fun isJust() = this is Some
+	inline infix fun <R> map(f: (T) -> R) = flatMap(f `-*` ::Some)
+	inline infix fun <R> flatMap(f: (T) -> Option<R>) = when (this) {
+		is Some -> f(obj)
+		None -> None
 	}
 }
 
-infix fun <T> Maybe<T>.`||`(o: Maybe<T>) = if (isJust()) this else o
-fun <T> Sequence<Maybe<T>>.firstJust() = fold(Nothing, Maybe<T>::`||`)
-fun <T> Iterable<Maybe<T>>.firstJust() = fold(Nothing, Maybe<T>::`||`)
-inline infix fun <T> Maybe<T>.getOr(f: () -> T) = asJustSafe() ?: f()
-infix fun <T> Maybe<T>.getOr(t: T) = getOr { t }
+infix fun <T> Option<T>.`||`(o: Option<T>) = if (isJust()) this else o
+fun <T> Sequence<Option<T>>.firstJust() = fold(None, Option<T>::`||`)
+fun <T> Iterable<Option<T>>.firstJust() = fold(None, Option<T>::`||`)
+inline infix fun <T> Option<T>.getOr(f: () -> T) = asJustSafe() ?: f()
+infix fun <T> Option<T>.getOr(t: T) = getOr { t }
 
-data class Just<T>(val obj: T) : Maybe<T>()
-object Nothing : Maybe<Void>()
+data class Some<T>(val obj: T) : Option<T>()
+object None : Option<Nothing>()

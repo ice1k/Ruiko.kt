@@ -9,7 +9,7 @@ data class History<T>(val base: Int, val branch: Int, val ctx: T)
 
 data class LiteralRule(
 		val test: (Token) -> Boolean,
-		val lexer: Maybe<() -> Lexer>
+		val lexer: Option<() -> Lexer>
 )
 
 data class LRInternal(val depth: Int, val name: String)
