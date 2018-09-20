@@ -36,7 +36,7 @@ repositories {
 
 dependencies {
 	compile(kotlin("stdlib-jdk8"))
-	compile("org.jetbrains.kotlinx:kotlinx-coroutines-core:0.25.3")
+	compile("org.jetbrains.kotlinx:kotlinx-coroutines-core:0.25.3-eap13")
 	val jimguiVersion = "v0.7"
 	compile(group = "org.ice1000.jimgui", name = "kotlin-dsl", version = jimguiVersion)
 	compile(group = "org.ice1000.jimgui", name = "extension", version = jimguiVersion)

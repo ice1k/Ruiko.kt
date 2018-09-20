@@ -3,7 +3,6 @@ package org.ice1000.ruiko.lexer
 import org.ice1000.ruiko.core.Token
 import org.ice1000.ruiko.core.cache
 import org.ice1000.ruiko.haskell.*
-import kotlin.coroutines.experimental.buildSequence
 
 sealed class LexerFactor
 data class RegexFactor(val regex: Regex) : LexerFactor()
