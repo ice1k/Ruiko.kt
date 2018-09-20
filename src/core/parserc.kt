@@ -36,10 +36,17 @@ data class State<T>(
 		fun <T, R> leftRecur(self: State<T>, lr: LRInternal, fn: (State<T>) -> R): R {
 			self.lr.add(lr)
 			println("start lr ${lr.name} at ${self.lr}")
-			val ret = fn(self)
-			self.lr.remove(lr)
-			println("end lr ${lr.name} at ${self.lr}")
-			return ret
+			return fn(self).also {
+				self.lr.remove(lr)
+				println("end lr ${lr.name} at ${self.lr}")
+			}
+		}
+
+		fun <T, R> contextualRecovery(self: State<T>, fn: (State<T>) -> R): R {
+			val ctx = self.context
+			return fn(self).also {
+				self.context = ctx
+			}
 		}
 	}
 
@@ -103,3 +110,7 @@ infix fun <T> Parser<T>.`|||`(f: Parser<T>) = otherwise(f)
 infix fun <T> Parser<T>.`&&&`(f: Parser<T>) = nextBy(f)
 val <T> Parser<T>.`?` get() = toOptional()
 
+sealed class Result<out T>
+object Unmatched : Result<Nothing>()
+data class Matched<T>(val ast: Ast<T>) : Result<T>()
+data class LR<T>(val parser: Pair<String, (Result<T>) -> Result<T>>) : Result<T>()
