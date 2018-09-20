@@ -63,13 +63,19 @@ infix fun <T> Option<T>.getOr(t: T) = getOr { t }
 data class Some<T>(val obj: T) : Option<T>()
 object None : Option<Nothing>()
 
-sealed class ConductiveList<out T> {
-	infix fun <R> map(f: (T) -> R): ConductiveList<R> = when (this) {
+sealed class CoinductiveList<out T> {
+	infix fun <R> map(f: (T) -> R): CoinductiveList<R> = when (this) {
 		is Cons -> f(x) `++` xs.map(f)
 		Nil -> Nil
 	}
 }
 
-infix fun <T> T.`++`(xs: ConductiveList<T>) = Cons(this, xs)
-data class Cons<T>(val x: T, val xs: ConductiveList<T>) : ConductiveList<T>()
-object Nil : ConductiveList<Nothing>()
+infix fun <T> T.`++`(xs: CoinductiveList<T>) = Cons(this, xs)
+infix fun <T> CoinductiveList<T>.`++r`(x: T) = `+++`(x `++` Nil)
+infix fun <T> CoinductiveList<T>.`+++`(os: CoinductiveList<T>): CoinductiveList<T> = when (this) {
+	is Cons -> x `++` (xs `+++` os)
+	Nil -> os
+}
+
+data class Cons<T>(val x: T, val xs: CoinductiveList<T>) : CoinductiveList<T>()
+object Nil : CoinductiveList<Nothing>()
