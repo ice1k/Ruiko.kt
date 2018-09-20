@@ -1,7 +1,6 @@
 package org.ice1000.ruiko.core
 
-import org.ice1000.ruiko.haskell.Maybe
-import org.ice1000.ruiko.haskell.`*-`
+import org.ice1000.ruiko.haskell.*
 import org.ice1000.ruiko.lexer.Lexer
 
 typealias RewriteFunc<T> = (State<T>) -> (Ast<T>) -> Ast<T>
@@ -69,8 +68,8 @@ data class State<T>(
 }
 
 sealed class Parser<out T>
-data class Predicate<T>(val f: (State<T>) -> Boolean) : Parser<T>()
-data class Rewrite<T>(val p: Parser<T>, val r: RewriteFunc<T>) : Parser<T>()
+data class Predicate<T>(val pred: (State<T>) -> Boolean) : Parser<T>()
+data class Rewrite<T>(val p: Parser<T>, val app: RewriteFunc<T>) : Parser<T>()
 data class Literal(val lit: LiteralRule) : Parser<Nothing>()
 object Anything : Parser<Nothing>()
 data class Lens<T>(val f: (T) -> (Ast<T>) -> T, val p: Parser<T>) : Parser<T>()
@@ -113,4 +112,46 @@ val <T> Parser<T>.`?` get() = toOptional()
 sealed class Result<out T>
 object Unmatched : Result<Nothing>()
 data class Matched<T>(val ast: Ast<T>) : Result<T>()
-data class LR<T>(val parser: Pair<String, (Result<T>) -> Result<T>>) : Result<T>()
+data class LR<T>(val pObj: String, val stack: (Result<T>) -> Result<T>) : Result<T>()
+
+inline fun <reified T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>) =
+		parse(self, tokens, state, T::class.java)
+
+fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Class<out T>): Result<T> = when (self) {
+	is Rewrite -> when (val rew = parse(self.p, tokens, state, `class`)) {
+		Unmatched -> Unmatched
+		is Matched -> Matched(rew.ast `*-` self.app(state))
+		is LR -> LR(rew.pObj) { res -> (rew.stack(res) as? Matched)?.let { Matched(self.app(state)(it.ast)) } ?: Unmatched }
+	}
+	is Predicate ->
+		if (self.pred(state)) Matched(Value(`class`.newInstance()))
+		else Unmatched
+	is Literal ->
+		if (tokens.size <= state.endIndex) Unmatched
+		else tokens[state.endIndex].takeIf(self.lit.test)?.let {
+			state.newOne()
+			Matched(Leaf(it))
+		} ?: Unmatched
+	Anything ->
+		if (tokens.size <= state.endIndex) Unmatched
+		else tokens[state.endIndex].let {
+			state.newOne()
+			Matched(Leaf(it))
+		}
+	is Lens -> when (val lens = parse(self.p, tokens, state, `class`)) {
+		Unmatched -> Unmatched
+		is Matched -> lens.apply { state.context = ast `*-` self.f(state.context) }
+		is LR -> LR(lens.pObj) { ast ->
+			when (val lr = ast `*-` lens.stack) {
+				Unmatched -> Unmatched
+				is Matched -> lr.also { state.context = it.ast `*-` self.f(state.context) }
+				else -> unreachable()
+			}
+		}
+	}
+	is Named -> TODO()
+	is And -> TODO()
+	is Or -> TODO()
+	is Repeat -> TODO()
+	is Except -> TODO()
+}

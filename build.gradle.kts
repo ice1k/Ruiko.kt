@@ -1,12 +1,21 @@
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
+import org.jetbrains.kotlin.gradle.plugin.source.KotlinSourceSet
 
 group = "org.ice1000.ruiko"
 version = "v0.1"
 
 plugins {
-	kotlin("jvm") version "1.2.60"
 	application
+}
+
+buildscript {
+	val kotlinVersion = "1.3-M2"
+	repositories { maven("http://dl.bintray.com/kotlin/kotlin-eap") }
+	dependencies { classpath ("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") }
+}
+
+apply {
+	plugin("kotlin")
 }
 
 java.sourceSets {
@@ -22,6 +31,7 @@ application.mainClassName = "$group.MainKt"
 repositories {
 	jcenter()
 	maven("https://dl.bintray.com/ice1000/ice1000")
+	maven("http://dl.bintray.com/kotlin/kotlin-eap")
 }
 
 dependencies {
@@ -31,8 +41,4 @@ dependencies {
 	compile(group = "org.ice1000.jimgui", name = "kotlin-dsl", version = jimguiVersion)
 	compile(group = "org.ice1000.jimgui", name = "extension", version = jimguiVersion)
 	compile(group = "org.ice1000.textseq", name = "impl-gap", version = "v0.3")
-}
-
-kotlin {
-	experimental.coroutines = Coroutines.ENABLE
 }

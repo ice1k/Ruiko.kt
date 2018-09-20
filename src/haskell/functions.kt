@@ -7,3 +7,4 @@ inline infix fun <A, B, C> ((A) -> B).`-*`(crossinline f: (B) -> C) = { a: A -> 
 inline infix fun <A, B> A.`*-`(crossinline f: (A) -> B) = f(this)
 inline infix fun <A, B> ((A) -> B).`-*`(a: A) = invoke(a)
 inline fun <T, reified R> unsafeCoerce(t: T) = t as R
+fun <T> unreachable(): T = throw RuntimeException("Impossible")

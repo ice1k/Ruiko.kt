@@ -3,10 +3,10 @@ package org.ice1000.ruiko.core
 /**
  * Created by redy red, don't know why
  * @param T
- * @property records MutableList<T>
- * @property commit Int
- * @property endIndex Int
- * @property maxFetched Int
+ * @property records [MutableList]
+ * @property commit [Int]
+ * @property endIndex [Int]
+ * @property maxFetched [Int]
  */
 class Trace<T> {
 	private val records: MutableList<T> = mutableListOf()
