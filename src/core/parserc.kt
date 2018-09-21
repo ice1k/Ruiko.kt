@@ -143,18 +143,13 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 			}
 		}
 	}
-	is Named -> TODO()
-	is And -> TODO()
 	is Or -> {
-		fun loop(left: CoinductiveList<Parser<T>>): Result<R> {
+		fun loop(left: CoinductiveList<Parser<T>>): Result<T> {
 			val history = state.commit()
 			return when (left) {
 				Nil -> Unmatched
-				is Cons -> when (val orz = parse(left.x, tokens, state, `class`) {
-					Unmatched -> {
-						state.reset(history)
-						loop(left.xs)
-					}
+				is Cons -> when (val orz = parse(left.x, tokens, state, `class`)) {
+					Unmatched -> state.reset(history).let { loop(left.xs) }
 					is Matched -> orz
 					is LR -> LR(orz.pObj) { ast -> (orz.stack(ast) as? Matched) ?: loop(left.xs) }
 				}
@@ -162,7 +157,6 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		}
 		loop(self.list)
 	}
-	is Repeat -> TODO()
 	is Except -> {
 		val history = state.commit()
 		when (parse(self.p, tokens, state, `class`)) {
@@ -174,4 +168,7 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 			else -> Unmatched.also { state.reset(history) }
 		}
 	}
+	is Named -> TODO()
+	is And -> TODO()
+	is Repeat -> TODO()
 }
