@@ -33,15 +33,15 @@ fun lex(castMap: Option<CastMap>) = fun(lexerTable: LexerTable) = { src: Source 
 	var columnN = 0
 	val fileName = src.fileName
 	/// workaround for KT-23531
-	fun loop(view: StringView): Sequence<Either<String, Token>> = buildSequence {
-		if (view.offset >= n) return@buildSequence
+	fun loop(view: StringView): Sequence<Either<String, Token>> = sequence {
+		if (view.offset >= n) return@sequence
 		val match = lexerFactorMatch(view)
 		lexerTable
 				.map { (n, f) -> match(f).map { n to it } }
 				.firstJust()
 				.getOr {
 					yield(Left("Unknown string head: `${view.ref.take(15)}` at ($lineN, $columnN) in $fileName"))
-					return@buildSequence
+					return@sequence
 				}
 				.let {
 					val (name, word) = it
