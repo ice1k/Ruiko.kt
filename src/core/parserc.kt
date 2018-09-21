@@ -128,7 +128,8 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		} ?: Unmatched
 	Anything ->
 		if (tokens.size <= state.endIndex) Unmatched
-		else tokens[state.endIndex].let {
+		else {
+			val it = tokens[state.endIndex]
 			state.newOne()
 			Matched(Leaf(it))
 		}
@@ -175,17 +176,26 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		val history = state.commit()
 		fun loop(isLR: Boolean, nested: MutableList<Ast<T>>, left: CoinductiveList<Parser<T>>): Result<T> = when (left) {
 			Nil -> Matched(Nested(nested))
-			is Cons -> when (val ands = parse(left.x, tokens, state, `class`)) {
-				Unmatched -> Unmatched.also { if (!isLR) state.reset(history) }
-				Matched -> mergeNested(nested, ands.ast)
-				LR -> if (isLR) Unmatched else LR(ands.pObj) { ast ->
+			is Cons -> when (
+				val ands = parse(left.x, tokens, state, `class`)) {
+				Unmatched -> {
+					if (!isLR) state.reset(history)
+					Unmatched
+				}
+				is Matched -> {
+					mergeNested(nested)(ands.ast)
+					loop(isLR, nested, left.xs)
+				}
+				is LR -> if (isLR) Unmatched else LR(ands.pObj) { ast ->
 					val new = ArrayList(nested)
-					(ands.stack(ast) as? Matched)?.let { mergeNested(new, it.ast) } ?: loop(left.xs)
-					loop(true, new, left.xs)
+					(ands.stack(ast) as? Matched)?.let {
+						mergeNested(new)(it.ast)
+						loop(true, new, left.xs)
+					} ?: Unmatched
 				}
 			}
 		}
-		loop(false, arrayListOf<Ast<T>>(), self.list)
+		loop(false, arrayListOf(), self.list)
 	}
 	is Named -> TODO()
 	is Repeat -> TODO()
