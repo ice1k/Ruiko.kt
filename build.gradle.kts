@@ -4,11 +4,15 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 group = "org.ice1000.ruiko"
 version = "v0.1"
 
+plugins { application }
+
 buildscript {
 	val kotlinVersion = "1.3.0-rc-57"
 	repositories { maven("http://dl.bintray.com/kotlin/kotlin-eap") }
 	dependencies { classpath ("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") }
 }
+
+apply { plugin("kotlin") }
 
 java.sourceSets {
 	"main" {
@@ -18,8 +22,6 @@ java.sourceSets {
 	}
 }
 
-plugins { application }
-apply { plugin("kotlin") }
 application.mainClassName = "$group.MainKt"
 
 repositories {

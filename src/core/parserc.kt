@@ -144,12 +144,15 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		}
 	}
 	is Or -> {
-		fun loop(left: CoinductiveList<Parser<T>>): Result<T> {
+		tailrec fun loop(left: CoinductiveList<Parser<T>>): Result<T> {
 			val history = state.commit()
 			return when (left) {
 				Nil -> Unmatched
 				is Cons -> when (val orz = parse(left.x, tokens, state, `class`)) {
-					Unmatched -> state.reset(history).let { loop(left.xs) }
+					Unmatched -> {
+						state.reset(history)
+						loop(left.xs)
+					}
 					is Matched -> orz
 					is LR -> LR(orz.pObj) { ast -> (orz.stack(ast) as? Matched) ?: loop(left.xs) }
 				}
