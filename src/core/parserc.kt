@@ -169,12 +169,17 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 				if (tokens.size <= state.endIndex) Unmatched
 				else Matched(Leaf(tokens[state.endIndex]))
 			}
-			else -> Unmatched.also { state.reset(history) }
+			else -> {
+				state.reset(history)
+				Unmatched
+			}
 		}
 	}
 	is And -> {
 		val history = state.commit()
-		fun loop(isLR: Boolean, nested: MutableList<Ast<T>>, left: CoinductiveList<Parser<T>>): Result<T> = when (left) {
+		fun loop(isLR: Boolean,
+						 nested: MutableList<Ast<T>>,
+						 left: CoinductiveList<Parser<T>>): Result<T> = when (left) {
 			Nil -> Matched(Nested(nested))
 			is Cons -> when (
 				val ands = parse(left.x, tokens, state, `class`)) {
@@ -197,6 +202,20 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		}
 		loop(false, arrayListOf(), self.list)
 	}
-	is Named -> TODO()
+	is Named -> {
+		val name = self.name
+		println("Start $name")
+		val parser = state.lang[name]!!
+		val exitTask = when (parser) {
+			is Rewrite -> ::Matched
+			else -> { v: Ast<T> -> Matched(MExpr(name, v)) }
+		}
+		val lrMarker = LRInternal(state.endIndex, name)
+		if (name in state) {
+			if (lrMarker in state.lr) {
+			}
+		}
+		TODO()
+	}
 	is Repeat -> TODO()
 }
