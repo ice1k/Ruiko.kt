@@ -20,16 +20,11 @@ data class State<T>(
 		val lang: MutableMap<String, Parser<T>>
 ) {
 	companion object Factory {
+		inline operator fun <reified T> invoke() = invoke(T::class.java.newInstance())
 		operator fun <T> invoke(top: T): State<T> {
 			val trace = Trace<Trace<String>>()
 			trace.append(Trace())
 			return State(hashSetOf(), top, trace, hashMapOf())
-		}
-
-		inline operator fun <reified T> invoke(): State<T> {
-			val trace = Trace<Trace<String>>()
-			trace.append(Trace())
-			return State(hashSetOf(), T::class.java.newInstance(), trace, hashMapOf())
 		}
 
 		fun <T, R> leftRecur(self: State<T>, lr: LRInternal, fn: (State<T>) -> R): R {
@@ -181,8 +176,7 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 						 nested: MutableList<Ast<T>>,
 						 left: CoinductiveList<Parser<T>>): Result<T> = when (left) {
 			Nil -> Matched(Nested(nested))
-			is Cons -> when (
-				val ands = parse(left.x, tokens, state, `class`)) {
+			is Cons -> when (val ands = parse(left.x, tokens, state, `class`)) {
 				Unmatched -> {
 					if (!isLR) state.reset(history)
 					Unmatched
