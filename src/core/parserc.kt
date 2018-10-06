@@ -2,6 +2,7 @@ package org.ice1000.ruiko.core
 
 import org.ice1000.ruiko.haskell.*
 import org.ice1000.ruiko.lexer.Lexer
+import kotlin.contracts.*
 
 typealias RewriteFunc<T> = (State<T>) -> (Ast<T>) -> Ast<T>
 
@@ -11,6 +12,15 @@ data class LiteralRule(
 		val test: (Token) -> Boolean,
 		val lexer: Option<() -> Lexer>
 )
+
+@ExperimentalContracts
+fun <T, R> contextualRecovery(self: State<T>, fn: (State<T>) -> R): R {
+	contract { callsInPlace(fn, InvocationKind.EXACTLY_ONCE) }
+	val ctx = self.context
+	return fn(self).also {
+		self.context = ctx
+	}
+}
 
 data class LRInternal(val depth: Int, val name: String)
 data class State<T>(
@@ -33,13 +43,6 @@ data class State<T>(
 			return fn(self).also {
 				self.lr.remove(lr)
 				println("end lr ${lr.name} at ${self.lr}")
-			}
-		}
-
-		fun <T, R> contextualRecovery(self: State<T>, fn: (State<T>) -> R): R {
-			val ctx = self.context
-			return fn(self).also {
-				self.context = ctx
 			}
 		}
 	}
@@ -103,9 +106,11 @@ object Unmatched : Result<Nothing>()
 data class Matched<T>(val ast: Ast<T>) : Result<T>()
 data class LR<T>(val pObj: String, val stack: (Result<T>) -> Result<T>) : Result<T>()
 
+@ExperimentalContracts
 inline fun <reified T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>) =
 		parse(self, tokens, state, T::class.java)
 
+@ExperimentalContracts
 fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Class<out T>): Result<T> = when (self) {
 	is Rewrite -> when (val rew = parse(self.p, tokens, state, `class`)) {
 		Unmatched -> Unmatched
@@ -197,7 +202,7 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		loop(false, arrayListOf(), self.list)
 	}
 	is Named -> {
-		val name = self.name
+		val (name, f) = self
 		println("Start $name")
 		val parser = state.lang[name]!!
 		val exitTask = when (parser) {
@@ -207,9 +212,23 @@ fun <T> parse(self: Parser<T>, tokens: List<Token>, state: State<T>, `class`: Cl
 		val lrMarker = LRInternal(state.endIndex, name)
 		if (name in state) {
 			if (lrMarker in state.lr) {
+				println("match failed $name")
+				Unmatched as Result<T>
+			} else LR(name, ::id)
+		} else {
+			contextualRecovery(state) { state ->
+				state.append(name)
+				state.context = f()
+				val history = state.commit()
+				when (val res = parse(parser, tokens, state, `class`)) {
+					Unmatched -> Unmatched
+					is Matched -> exitTask(res.ast)
+					is LR -> if (res.pObj != name) LR(res.pObj) { ast ->
+						(res.stack(ast) as? Matched)?.let { exitTask(it.ast) } ?: Unmatched
+					} else TODO()
+				}
 			}
 		}
-		TODO()
 	}
 	is Repeat -> TODO()
 }
